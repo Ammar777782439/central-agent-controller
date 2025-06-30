@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package agent;
+
+option go_package = "central-agent-controller/proto";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// =============================
+// تعريف قدرات الوكيل (قابلة للتوسع)
+// =============================
+message AgentCapability {
+  string name = 1;         // مثال: "collect_metrics", "send_logs", "scan"
+  string description = 2;  // شرح ما تقوم به هذه المهارة
+}
+
+// =============================
+// رسالة تسجيل الوكيل
+// =============================
+message AgentConfigRequest {
+  string agent_id = 1;
+  string hostname = 2;
+  string ip_address = 3;
+  string os_version = 4;
+  string agent_version = 5;
+  repeated AgentCapability capabilities = 6;
+  int64 timestamp = 7;
+  string api_key = 8; // مفتاح المصادقة
+}
+
+// =============================
+// الأوامر المرسلة من الخادم
+// =============================
+message Command {
+  string task_id = 1;                     // معرف فريد للأمر
+  string name = 2;                        // اسم الأمر الحر
+  google.protobuf.Struct parameters = 3; // معطيات تنفيذية (اختياري)
+}
+
+// رد الخادم على SendConfig – يعطي أوامر تناسب قدرات الوكيل
+message AgentCommandResponse {
+  repeated Command commands = 1;
+  string reason = 2; // توضيح السبب لو ما فيه أوامر (مثلاً: "agent busy")
+}
+
+// =============================
+// حالة تنفيذ الأمر من طرف الوكيل
+// =============================
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_SUCCESS = 1;
+  STATUS_IN_PROGRESS = 2;
+  STATUS_FAILED_AGENT_ERROR = 3;
+  STATUS_FAILED_SERVER_ERROR = 4;
+  STATUS_REJECTED = 5;
+}
+
+// تقرير نتيجة تنفيذ أمر
+message AgentCommandResultRequest {
+  string agent_id = 1;
+  string task_id = 2;
+  string command_name = 3;
+  Status status = 4;
+  string result = 5;
+  AgentConfigRequest current_config = 6; // الحالة بعد تنفيذ الأمر
+  int64 timestamp = 7;
+}
+
+// رد الخادم بعد استلام نتيجة التنفيذ
+message AcknowledgementResponse {
+  string message = 1;
+  Command next_command = 2; // يمكن تركه فارغ
+}
+
+// =============================
+// واجهة الخدمة الرئيسية
+// =============================
+service AgentService {
+  rpc SendConfig(AgentConfigRequest) returns (AgentCommandResponse);
+  rpc SendResult(AgentCommandResultRequest) returns (AcknowledgementResponse);
+}

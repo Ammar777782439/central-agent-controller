@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package agent;
+
+option go_package = "central-agent-controller/proto";
+
+
+
+// capabilities:
+//   - scan
+//   - update
+//   - firewall
+//   - application
+
+message AgentConfigRequest {
+  string agent_id = 1;
+  string hostname = 2;
+  string ip_address = 3;
+  string os_version = 4;
+  string agent_version = 5;
+  repeated string capabilities = 6;
+  int64 timestamp = 7;
+   string api_key = 8; // << إضافة جديدة للتحقق من الهوية
+}
+
+// ===================================================
+// 1. تعريف هياكل الأوامر المنفصلة
+// ===================================================
+
+// أمر لبدء الفحص. حالياً لا يحتاج لمعلمات،  يمكن إضافتها لاحقاً
+message StartScanCommand {
+    // string scan_target_path = 1; //  يمكن إضافة مسار معين للفحص لاحقاً
+}
+
+// أمر لتحديث البرامج 
+message UpdateSoftwareCommand {
+    // رابط ملف التحديث
+    string update_url = 1; 
+    // رقم الإصدار الجديد
+    string version = 2;   
+}
+
+// أمر للانتظار. يمكن تحديد مدة الانتظار
+message WaitCommand {
+   // مدة الانتظار بالثواني
+    int32 duration_seconds = 1;
+}
+
+// أمر لتغيير إعدادات الجدار الناري
+message ConfigureFirewallCommand {
+    enum Action {
+        ACTION_UNSPECIFIED = 0;
+        ACTION_ALLOW = 1;
+        ACTION_DENY = 2;
+    }
+    Action action = 1;
+    string port = 2;
+    string source_ip = 3;
+}
+
+message Command {
+    oneof command_type {
+        StartScanCommand start_scan = 1;
+        UpdateSoftwareCommand update_software = 2;
+        WaitCommand wait = 3;
+        ConfigureFirewallCommand configure_firewall = 4;
+    }
+} 
+// بنرد بنا علي قدرات الوكيل 
+message AgentCommandResponse {
+  // كانت مصفوفه مبدئيا الحين صارت كائن وتدعم فقط الاوامر الي معرفينها
+  // string command = 1; // START_SCAN, WAIT, UPDATE_SOFTWARE "FIND_ME"
+ repeated Command commands = 1;
+  string reason = 2;  
+}
+
+
+
+// ---------------------------
+// رسائل نتائج تنفيذ الأوامر
+// ---------------------------
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_SUCCESS = 1;
+  STATUS_IN_PROGRESS = 2;
+  STATUS_FAILED_AGENT_ERROR = 3;  // فشل بسبب خطأ في الوكيل
+  STATUS_FAILED_SERVER_ERROR = 4; // فشل بسبب خطأ في الخادم
+  STATUS_REJECTED = 5;            // الأمر مرفوض من قبل الوكيل
+}
+
+message AgentCommandResultRequest {
+  string agent_id = 1;
+  string executed_command = 2;     // الأمر اللي نفذه مثل: "START_SCAN" "FIND_ME"
+  Status status = 3;  
+  // لكل أمر (Command) نرسله يجب أن يكون هناك تقرير نتيجة (Result) مهيكل ومخصص له. بدلاً من "string" عام، سننشئ "نموذج تقرير" لكل نوع من أنواع الأوامر. 
+  
+  // مبدئيا كذا الين نخرج بتصور كامل لللسيرفر
+  string result = 4;              
+  
+  AgentConfigRequest current_config = 5; // التهيئة الحالية بعد تنفيذ الأمر
+  int64 timestamp = 6;
+}
+
+message AcknowledgementResponse {
+  string message = 1;              // رسالة تأكيد أو توجيه
+  string next_command = 2;         // أمر جديد إذا لزم
+}
+
+// ---------------------------
+// الواجهة الرئيسية للخادم
+// ---------------------------
+
+service AgentService {
+  rpc SendConfig(AgentConfigRequest) returns (AgentCommandResponse);
+  rpc SendResult(AgentCommandResultRequest) returns (AcknowledgementResponse);
+}

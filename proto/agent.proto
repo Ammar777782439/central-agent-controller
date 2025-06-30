@@ -19,7 +19,6 @@ message AgentConfigRequest {
   string os_version = 4;
   string agent_version = 5;
   
-//    قائمة القدرات أو الخصائص اللي يدعمها الوكيل 
   repeated string capabilities = 6;
   int64 timestamp = 7;
    string api_key = 8; // << إضافة جديدة للتحقق من الهوية
