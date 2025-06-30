@@ -1,0 +1,84 @@
+أكيد، هذا الكود مع تعليقات توثيقية واضحة بالإنجليزي، بحيث يفهمها أي مبرمج بسهولة:
+
+```proto
+syntax = "proto3";
+
+package agent;
+
+option go_package = "central-agent-controller/proto";
+
+
+// Agent capabilities examples:
+//   - scan
+//   - update
+//   - firewall
+//   - application
+
+// Request message sent by the agent to register or update its configuration on the server.
+message AgentConfigRequest {
+  string agent_id = 1;         // Unique identifier of the agent
+  string hostname = 2;         // Agent's hostname
+  string ip_address = 3;       // Agent's current IP address
+  string os_version = 4;       // Operating system version on the agent machine
+  string agent_version = 5;    // Version of the agent software
+
+  repeated string capabilities = 6; // List of agent's supported capabilities or features
+  int64 timestamp = 7;               // Unix timestamp when this config was sent
+  string api_key = 8;                // API key used for authentication of the agent (new addition)
+}
+
+
+// Server response containing the commands assigned to the agent based on its capabilities.
+message AgentCommandResponse {
+  repeated string commands = 1; // List of command names for the agent to execute, e.g., "START_SCAN", "WAIT", "UPDATE_SOFTWARE", "FIND_ME"
+  string reason = 2;            // Optional reason or explanation for the commands sent
+}
+
+
+
+// ---------------------------
+// Command execution result messages
+// ---------------------------
+
+// Status enum representing the possible states of command execution by the agent.
+enum Status {
+  STATUS_UNSPECIFIED = 0;         // Default unspecified status
+  STATUS_SUCCESS = 1;             // Command executed successfully
+  STATUS_IN_PROGRESS = 2;         // Command is still running/in progress
+  STATUS_FAILED_AGENT_ERROR = 3;  // Command failed due to an error on the agent side
+  STATUS_FAILED_SERVER_ERROR = 4; // Command failed due to an error on the server side
+  STATUS_REJECTED = 5;            // Command was rejected by the agent (e.g., unsupported or invalid)
+}
+
+// Message sent from the agent reporting the result of a command execution back to the server.
+message AgentCommandResultRequest {
+  string agent_id = 1;              // Unique ID of the agent reporting the result
+  string executed_command = 2;      // The name of the command that was executed (e.g., "START_SCAN", "FIND_ME")
+  Status status = 3;                // Execution status of the command
+  string result = 4;                // Result data or summary of command execution
+  AgentConfigRequest current_config = 5; // The current agent configuration after executing the command
+  int64 timestamp = 6;             // Unix timestamp when the result was sent
+}
+
+// Server acknowledgment response after receiving the command execution result.
+message AcknowledgementResponse {
+  string message = 1;           // Confirmation or instruction message from the server
+  string next_command = 2;      // Optional next command for the agent to execute, if any
+}
+
+
+// ---------------------------
+// Main gRPC service interface definition for the Agent
+// ---------------------------
+
+service AgentService {
+  // Agent sends its configuration; server responds with commands to execute
+  rpc SendConfig(AgentConfigRequest) returns (AgentCommandResponse);
+
+  // Agent sends the result of executed commands; server acknowledges and optionally sends next command
+  rpc SendResult(AgentCommandResultRequest) returns (AcknowledgementResponse);
+}
+```
+
+هذا التوثيق يغطي كل حقل وهدفه باختصار مباشر واضح لأي مبرمج يقرأ الملف.
+هل تريدني أساعدك تكتب أمثلة على رسائل الـ gRPC أو شرح لاستخدام هذا البروتوكول عمليًا؟
