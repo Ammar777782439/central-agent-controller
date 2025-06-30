@@ -1,6 +1,4 @@
-أكيد، هذا الكود مع تعليقات توثيقية واضحة بالإنجليزي، بحيث يفهمها أي مبرمج بسهولة:
 
-```proto
 syntax = "proto3";
 
 package agent;
@@ -78,7 +76,3 @@ service AgentService {
   // Agent sends the result of executed commands; server acknowledges and optionally sends next command
   rpc SendResult(AgentCommandResultRequest) returns (AcknowledgementResponse);
 }
-```
-
-هذا التوثيق يغطي كل حقل وهدفه باختصار مباشر واضح لأي مبرمج يقرأ الملف.
-هل تريدني أساعدك تكتب أمثلة على رسائل الـ gRPC أو شرح لاستخدام هذا البروتوكول عمليًا؟
